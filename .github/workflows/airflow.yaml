@@ -1,0 +1,35 @@
+name: CI/CD for Apache Airflow with Docker Compose
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow on push to the main branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v1
+    
+    - name: Install Docker Compose
+      run: |
+        sudo apt-get update
+        sudo apt-get install docker-compose -y
+
+    - name: Build and Run Docker Compose
+      run: docker-compose -f compose.yaml up -d --build
+    
+    - name: Wait for services to be ready
+      run: |
+        docker-compose exec -T airflow-webserver bash -c "until curl -s http://localhost:8080/health; do sleep 5; done"
+    
+    - name: Run tests (if any)
+      run: |
+        docker-compose exec -T airflow-webserver airflow dags list  # Sample Airflow command to test
+    
+    
